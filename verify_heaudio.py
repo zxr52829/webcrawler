@@ -22,24 +22,59 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 HEADERS = {"User-Agent": UA, "Referer": "https://www.douyin.com/"}
 
-VIDEO = (
-    "https://v11-weba.douyinvod.com/6b81ba556c396db15fadec0e5cd62d6e/6ad71907/video/tos/cn/"
-    "tos-cn-vd-0026c000-ce/oY5IZPMAPia9BBi5IlAlAgYP0hnAXbPNDADms/media-video-avc1/"
-    "?a=6383&ch=0&cr=8&dr=0&er=1&lr=default&cd=0%7C0%7C0%7C3&cv=1&br=542&bt=542&cs=0&ds=3"
-    "&mime_type=video_mp4&qs=1"
-    "&rc=NGc5ZjppNzpnPDc4NDs3NEBpajR5c3c5cjp2ZTMzbGkzNEBiNDMvXi80NjMxNTFhMi9hYSNmZjZhMmQ0ZS5hLS1kLWJzcw%3D%3D"
-    "&btag=c0000e00028000&cquery=100w_100o&dy_q=1792394961&l=2026101915292159948E26DCAFEDF6CDF0"
-)
-AUDIO = (
-    "https://v11-weba.douyinvod.com/6e5e1e3a417144313aebdca09e31f2ab/6ad71907/video/tos/cn/"
-    "tos-cn-ve-15c000-ce/oo2sDMPRalBlP5XxAAPAhDpuPnbIiPAIBA9ig/media-audio-und-mp4a/"
-    "?a=6383&ch=0&cr=8&dr=0&er=1&lr=default&cd=0%7C0%7C0%7C3&cv=1&br=53&bt=53&cs=4&ds=3"
-    "&mime_type=video_mp4&qs=0"
-    "&rc=aGlmNmdoNjZmaGc5Zjs8NkBpajR5c3c5cjp2ZTMzbGkzNEAwL2IyXjBjLjReNl9iXzYwYSNmZjZhMmQ0ZS5hLS1kLWJzcw%3D%3D"
-    "&btag=c0000e00028000&cquery=100w_100o&dy_q=1792394961&l=2026101915292159948E26DCAFEDF6CDF0"
-)
+OUT = Path.home() / "Downloads" / "网页抓取结果" / "_heaudio_test"
 
-OUT = Path.home() / "Downloads" / "网页抓取结果" / "抖音_羊肉面音轨测试"
+
+def resolve_sources() -> tuple[str, str, str]:
+    """取待测的两条流地址和清单来源。
+
+    优先用命令行传入的 *_视频流.txt，否则找输出目录里最新的那个。
+    不内置任何具体视频链接 —— 那种链接既会过期，也不该写死在仓库里。
+    """
+    import re
+
+    if len(sys.argv) > 1:
+        listing = Path(sys.argv[1])
+    else:
+        cands = sorted(
+            (Path.home() / "Downloads" / "网页抓取结果").glob("*_视频流.txt"),
+            key=lambda p: p.stat().st_mtime,
+        )
+        if not cands:
+            print("找不到 *_视频流.txt。请先抓一次视频，或传入清单路径：")
+            print("  python verify_heaudio.py <视频流.txt>")
+            raise SystemExit(2)
+        listing = cands[-1]
+
+    print(f"清单: {listing.name}")
+    video_url = audio_url = ""
+    cur = ""
+    for line in listing.read_text(encoding="utf-8", errors="replace").splitlines():
+        s = line.strip()
+        if s.startswith("#"):
+            cur = "video" if "视频轨" in s else ("audio" if "音频轨" in s else "")
+            continue
+        if not s.startswith("http"):
+            continue
+        if cur == "video" and not video_url:
+            video_url = s
+        elif cur == "audio" and not audio_url:
+            audio_url = s
+
+    # 没有注释标记时按 codecid/mime 特征判断
+    if not video_url:
+        urls = [l.strip() for l in listing.read_text(encoding="utf-8").splitlines()
+                if l.strip().startswith("http")]
+        for u in urls:
+            if re.search(r"media-video|mime_type=video|100\d{3}", u) and not video_url:
+                video_url = u
+            elif re.search(r"media-audio|302\d{2}", u) and not audio_url:
+                audio_url = u
+
+    if not video_url or not audio_url:
+        print("清单里没有完整的视频轨+音频轨")
+        raise SystemExit(2)
+    return video_url, audio_url, listing.name
 
 
 def check(label: str, cond: bool, detail: str = "") -> None:
@@ -95,9 +130,11 @@ def main() -> int:
     vp = OUT / "v.mp4"
     ap = OUT / "a.mp4"
 
+    video_url, audio_url, _ = resolve_sources()
+
     log("[1] 下载两条流")
-    log(f"  视频 {fetch(VIDEO, vp) / 1024 / 1024:.2f} MB")
-    log(f"  音频 {fetch(AUDIO, ap) / 1024 / 1024:.2f} MB")
+    log(f"  视频 {fetch(video_url, vp) / 1024 / 1024:.2f} MB")
+    log(f"  音频 {fetch(audio_url, ap) / 1024 / 1024:.2f} MB")
 
     aprofile = ffprobe_field(ap, "a:0", "profile")
     log(f"\n[2] 原始音频 profile: {aprofile}")

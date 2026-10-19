@@ -214,8 +214,9 @@ python verify_video_gui.py "https://www.bilibili.com/video/BVxxxxxxxx/"
 python verify_video_timing.py "URL"   # 不同时刻抓取的表现
 python verify_video_stress.py "URL"   # 多轮重载，统计直链/blob 覆盖率
 
-# HE-AAC 无声修复验证（内置测试链接，链接过期会跳过）
+# HE-AAC 无声修复验证（自动取最新的 *_视频流.txt）
 python verify_heaudio.py
+python verify_heaudio.py "某份_视频流.txt"   # 也可指定清单
 
 # JS 单元测试（需要 npm i jsdom）
 node verify.js
