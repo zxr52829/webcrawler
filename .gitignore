@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# PyInstaller
+build/
+dist/
+*.manifest
+*.spec.bak
+
+# 运行产物
+_gui_test_result.json
+selftest.log
+*.log
+_*_out/
+_*test*/
+*.png
+*.jpg
+!docs/*.png
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*~
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini

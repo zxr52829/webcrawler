@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>抓取器测试页面 — 视频/图片/文字全覆盖</title>
+<style>
+  body{font:15px/1.8 "Microsoft YaHei",sans-serif;max-width:820px;margin:0 auto;padding:24px;background:#fafafa;color:#222;}
+  h1{border-bottom:2px solid #333;padding-bottom:8px;}
+  h2{margin-top:32px;color:#b00;}
+  .box{background:#fff;border:1px solid #ddd;padding:16px;margin:12px 0;border-radius:6px;}
+  .bgimg{width:220px;height:120px;background:url('https://picsum.photos/seed/bgcase/220/120') center/cover;border-radius:6px;}
+  .lazy{width:200px;height:120px;background:#eee;border:1px dashed #bbb;}
+  ul li{margin:4px 0;}
+  blockquote{border-left:4px solid #ccc;margin:12px 0;padding-left:14px;color:#555;}
+</style>
+</head>
+<body>
+
+<h1 id="main-title">抓取器测试页面</h1>
+
+<article>
+  <h2>一、文字区</h2>
+  <p>这是一段用于验证<strong>正文提取</strong>的测试段落。抓取器应当能够正确识别 article 容器，并把段落、标题、列表都拼成纯文本。</p>
+  <p>第二段落：中文与 English mixed content 都要能统计。含有数字 12345 和特殊符号 &amp; &lt; &gt; 用来测试转义。</p>
+
+  <h2>二、列表与引用</h2>
+  <ul>
+    <li>列表项一：验证 li 提取</li>
+    <li>列表项二：验证去重逻辑</li>
+    <li>列表项三：验证嵌套跳过</li>
+  </ul>
+  <blockquote>引用块：用于验证 blockquote 标签能被抓到。</blockquote>
+
+  <h2>三、视频区</h2>
+  <div class="box">
+    <p>标准 video 标签 + source 子节点：</p>
+    <video controls width="480" poster="https://picsum.photos/seed/poster/480/270">
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+      <source src="https://www.w3schools.com/html/mov_bbb.webm" type="video/webm">
+    </video>
+  </div>
+  <div class="box">
+    <p>带 poster 的 video：</p>
+    <video controls width="360" poster="https://picsum.photos/seed/poster2/360/200"
+           src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"></video>
+  </div>
+
+  <h2>四、图片区</h2>
+  <div class="box">
+    <p>普通 img：</p>
+    <img src="https://picsum.photos/seed/img1/240/160" alt="普通图片一" width="240">
+    <img src="https://picsum.photos/seed/img2/240/160" alt="普通图片二" width="240">
+  </div>
+  <div class="box">
+    <p>懒加载 img（data-src）：</p>
+    <img data-src="https://picsum.photos/seed/lazy1/240/160" alt="懒加载图一" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" width="240">
+    <img class="lazy" data-original="https://picsum.photos/seed/lazy2/240/160" alt="懒加载图二">
+  </div>
+  <div class="box">
+    <p>CSS 背景图：</p>
+    <div class="bgimg"></div>
+  </div>
+  <div class="box">
+    <p>srcset 响应式图：</p>
+    <img srcset="https://picsum.photos/seed/rs1/320/200 320w, https://picsum.photos/seed/rs1/640/400 640w"
+         src="https://picsum.photos/seed/rs1/320/200" alt="响应式图">
+  </div>
+
+  <h2>五、内联脚本里的直链</h2>
+  <div class="box">
+    <p>下面这段脚本里藏了 m3u8 和 mp4 直链，用于验证脚本正则提取：</p>
+    <div id="player"></div>
+  </div>
+</article>
+
+<script>
+  // 模拟播放器配置：抓取器应从这段脚本中提取出直链
+  var playerConfig = {
+    sources: [
+      { file: "https://example.com/media/hls/stream_720p.m3u8", label: "720p" },
+      { file: "https://example.com/media/hls/stream_1080p.m3u8", label: "1080p" },
+      { file: "https://example.com/media/video/trailer.mp4", label: "预告" }
+    ],
+    poster: "https://example.com/media/poster.jpg"
+  };
+  document.getElementById('player').textContent =
+    '已加载 ' + playerConfig.sources.length + ' 个媒体源';
+</script>
+
+</body>
+</html>
